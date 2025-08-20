@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href='https://fonts.googleapis.com/css?family=Open Sans' rel='stylesheet'>
+  <title>EcoCity</title>
+  <script src="./thirdy-party/tailwind.3.4.16.js"></script>
+  <style>
+    * {
+        font-family: 'Open Sans';
+    }
+    
+    .indicator-bar div {
+        width: 1.5rem;
+        height: 1rem;
+    }
+    .indicator-arrow {
+        width: 0px;
+        height: 0px;
+        border-style: solid;
+        border-width: 0 7.5px 13.0px 7.5px;
+        border-color: transparent transparent #A38BA5 transparent;
+        position: absolute;
+        transform: translateX(-50%) translateY(-70%);
+        transition: left 0.3s ease-in-out;
+        pointer-events: none;
+        left: 5%;
+    }
+    .indicator-wrapper {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        width: fit-content;
+        margin-bottom: 1rem;
+    }
+
+    .tile
+    {
+        width: 44px;
+        height: 44px;
+        border-radius: 1px;
+        position: relative;
+    }
+
+    .title-selectable
+    {
+        cursor: pointer;
+    }
+
+    .tile-selectable:hover
+    {
+        background-color: rgba(0, 0, 0, 0.1);
+        background-blend-mode: multiply;
+    }
+
+    .tile-selected
+    {
+        background-color: rgba(0, 0, 0, 0.2);
+        background-blend-mode: multiply;
+        outline: 5px solid #981A1A;
+        z-index: 1000;
+        cursor: pointer;
+    }
+
+    .tooltip {
+        position: absolute; 
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(6px);
+        background: #ffffff;
+        color: #000000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1.5px 4px rgba(0,0,0,0.06);
+        border-radius: 4px;
+        width: fit-content;
+        padding: 4px 8px;
+        z-index: 200000;
+        white-space: nowrap;
+    }
+
+    .tooltip:after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 50%;
+        bottom: 100%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border: 6px solid transparent;
+        border-bottom-color: #ffffff;
+    }
+
+    .tooltip-left {
+        position: absolute; 
+        top: 0%;
+        left: 0%;
+        transform: translateX(-100%) translateX(-6px);
+        background: #ffffff;
+        color: #000000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1.5px 4px rgba(0,0,0,0.06);
+        border-radius: 4px;
+        width: fit-content;
+        padding: 4px 8px;
+        z-index: 200000;
+        white-space: nowrap;
+    }
+
+    .tooltip-left:after {
+        content: '';
+        display: block;
+        position: absolute;
+        left: 100%;
+        bottom: 50%;
+        transform: translateY(50%);
+        width: 0;
+        height: 0;
+        border: 6px solid transparent;
+        border-left-color: #ffffff;
+    }
+
+    .missing-ongoing-resource-popup {
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        position: absolute;
+        width: 310px;
+        background-color: #dc2626;
+        color: #ffffff;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        border: 3px solid #000000;
+        border-radius: 2px;
+        z-index: 10000;
+        cursor: default;
+    }
+
+    .missing-ongoing-resource-popup:before {
+        content: '';
+        display: block;
+        position: absolute;
+        transform: translateX(-50%);
+        left: 50%;
+        bottom: 100%;
+        width: 0;
+        height: 0;
+        border: 10px solid transparent;
+        border-bottom-color: black;
+    }
+
+    .missing-ongoing-resource-popup:after {
+        content: '';
+        display: block;
+        position: absolute;
+        transform: translateX(calc(-50% - 4px));
+        left: calc(50% + 4px);
+        bottom: 100%;
+        width: 0;
+        height: 0;
+        border: 6px solid transparent;
+        border-bottom-color: #dc2626;
+    }
+
+    .happiness-face {
+        position: relative;
+    }
+
+    .happiness-face .tooltip {
+        display: none;
+    }
+
+    .happiness-face:hover .tooltip {
+        display: block;
+    }
+
+    .face-emoji {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .button {
+        background: black;
+        color: white;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        height: fit-content;
+    }
+  </style>
+</head>
+<body class="bg-[#F6F6F6] text-black font-sans">
+    <div class="bg-[#67B28E] px-8 py-3 text-xl text-white flex flex-row justify-between">
+        <span>EcoCity</span>
+        <div>
+            <span class="cursor-pointer p-3" onclick="show_instructions_window()">?</span>
+        </div>
+    </div>
+
+    <div class="w-full pb-6 flex flex-col justify-center items-center">
+        <div class="w-fit pt-6">
+            <div class="w-full border-[3px] border-black my-4 p-4 text-center hidden">[Advertisement]</div>
+
+            <div id="title-screen" class="w-full flex flex-col bg-[#F6F6F6] items-center">
+                <div class="flex flex-1 w-full justify-center items-center relative">
+                    <!-- Left Grid -->
+                    <div class="grid grid-rows-6 grid-cols-4 gap-1 mr-8">
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/house.svg" />
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/nuclear-power-plant.svg" />
+                        <img class="tile" src="tiles/coal-power-plant.svg" />
+                        <img class="tile" src="tiles/national-park.svg" />
+                        <img class="tile" src="tiles/beach-house.svg" />
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/forest.svg" />
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/solar-farm.svg" />
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/rainwater-tank.svg" />
+                    </div>
+
+                    <!-- Center Title Content -->
+                    <div class="flex flex-col items-center text-center mx-8">
+                        <h1 class="text-7xl mb-2">EcoCity</h1>
+                        <em class="text-2xl mb-4" style="font-family: Times New Roman;">Can you build a better city?</em>
+                        <label class="text-[22px] mb-2 w-48">Enter your city's name:</label>
+                        <input type="text" class="border border-black px-4 py-1 mb-4" id="city-name-field" autocomplete="off" />
+                        <button class="bg-black text-white px-9 py-2" id="play-button">Play</button>
+
+                        <!-- Bottom Grid -->
+                        <div class="grid grid-rows-4 grid-cols-6 gap-1 mt-6">
+                            <img class="tile" src="tiles/farm.svg" />
+                            <img class="tile" src="tiles/grassland.svg" />
+                            <img class="tile" src="tiles/grassland.svg" />
+                            <img class="tile" src="tiles/grassland.svg" />
+                            <img class="tile" src="tiles/grassland.svg" />
+                            <div class="tile"></div>
+                            <img class="tile" src="tiles/forest.svg" />
+                            <img class="tile" src="tiles/forest.svg" />
+                            <img class="tile" src="tiles/rainwater-tank.svg" />
+                            <img class="tile" src="tiles/grassland.svg" />
+                            <div class="tile"></div>
+                            <div class="tile"></div>
+                            <div class="tile"></div>
+                            <img class="tile" src="tiles/forest.svg" />
+                            <img class="tile" src="tiles/hospital.svg" />
+                            <div class="tile"></div>
+                            <img class="tile" src="tiles/seaweed-farm.svg" />
+                            <div class="tile"></div>
+                            <img class="tile" src="tiles/fishery.svg" />
+                            <div class="tile"></div>
+                            <div class="tile"></div>
+                            <div class="tile"></div>
+                            <div class="tile"></div>
+                            <img class="tile" src="tiles/hydroelectric-dam.svg" />
+                        </div>
+                    </div>
+
+                    <!-- Right Grid -->
+                    <div class="grid grid-rows-3 grid-cols-3 gap-1 ml-8">
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/forest.svg" />
+                        <div class="tile"></div>
+                        <img class="tile" src="tiles/coal-mine.svg" />
+                        <img class="tile" src="tiles/uranium-mine.svg" />
+                        <img class="tile" src="tiles/forest.svg" />
+                        <img class="tile" src="tiles/iron-mine.svg" />
+                        <img class="tile" src="tiles/forest.svg" />
+                        <div class="tile"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden flex flex-row" id="main-game">
+                <!-- Sidebar -->
+                <div class="p-6 text-sm space-y-4 flex flex-col">
+                    <h2 class="text-lg text-center">THE CITY OF<br><span class="text-2xl" id="city-name">Nekoskia</span></h2>
+                    <div class="text-center">POPULATION<br><span id="population-count">3</span></div>
+                    <div class="text-center">
+                        <span class="block text-sm mb-2">HAPPINESS</span>
+                        <div id="happiness-meter" class="flex justify-center text-sm"></div>
+                    </div>
+
+                    <div class="text-center">WEALTH<br><span id="city-wealth">$1200</span></div>
+                    <div class="text-center w-full">TAXES
+                        <div class="mt-2 flex items-center w-full">
+                            <input type="range" min="0" max="100" value="60" class="w-full accent-orange-500" id="tax-rate-slider">
+                        </div>
+                        <div class="text-sm mt-2 text-left">Tax rate: <span id="tax-rate-percent">60%</span></div>
+                    </div>
+                    <div class="text-center">RESOURCES
+                    <ul class="list-disc pl-4 pt-2 text-left" id="resource-list">
+                        <li>10 coal</li>
+                        <li>50 wheat</li>
+                        <li>150 wood</li>
+                        <li>200 iron</li>
+                    </ul>
+                    </div>
+                    <a href="javascript:;" class="text-blue-500 text-[16px] text-center underline" onclick="open_trade_popup()">Trade: Import/Export</a>
+                </div>
+
+                <div class="flex flex-col">
+                    <!-- Game Grid -->
+                    <div id="game-grid" class="grid grid-cols-10 gap-1"></div>
+                    <!-- Bottom Panel -->
+                    <div class="flex justify-between pt-3 items-center">
+                        <div class="flex flex-col space-y-1 w-2/3">
+                            <span class="text-[15px] block">LIVEABILITY</span>
+                            <div class="w-fit relative">
+                                <div id="liveability-bar" class="indicator-bar cursor-pointer flex">
+                                    <div class="bg-[#B82100]"></div>
+                                    <div class="bg-[#DD2800]"></div>
+                                    <div class="bg-[#DC5100]"></div>
+                                    <div class="bg-[#DB6200]"></div>
+                                    <div class="bg-[#DC7D00]"></div>
+                                    <div class="bg-[#D9A400]"></div>
+                                    <div class="bg-[#DBC300]"></div>
+                                    <div class="bg-[#C0D900]"></div>
+                                    <div class="bg-[#9FD200]"></div>
+                                    <div class="bg-[#7DD600]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="liveability-indicator"></div>
+                            </div>
+                            
+                            <span class="text-[15px] block mb-1">POLLUTION</span>
+                            <div class="w-fit relative">
+                                <div id="pollution-bar" class="indicator-bar cursor-pointer flex">
+                                    <div class="bg-[#D5D5D5]"></div>
+                                    <div class="bg-[#BCBCBC]"></div>
+                                    <div class="bg-[#ABABAB]"></div>
+                                    <div class="bg-[#A2A2A2]"></div>
+                                    <div class="bg-[#969696]"></div>
+                                    <div class="bg-[#888888]"></div>
+                                    <div class="bg-[#767676]"></div>
+                                    <div class="bg-[#6D6D6D]"></div>
+                                    <div class="bg-[#646464]"></div>
+                                    <div class="bg-[#5A5A5A]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="pollution-indicator"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <p id="day-number">Day 5</p>
+                            <button id="next-day-button" class="bg-black text-white px-4 py-2">Next day</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selection Panel -->
+                <div class="flex flex-col p-4 pt-0 pb-1 w-[300px] h-[476px]">
+                    <div id="back-button" class="flex items-center gap-2 invisible">
+                        <button id="back-button" class="flex items-center text-xs text-black hover:underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                            See other options
+                        </button>
+                    </div>
+                    <h2 class="text-2xl" id="selection-heading">Selection Panel</h2>
+                    <p class="text-sm text-gray-600" id="selection-panel-instruction">Click on something to view more information.</p>
+
+                    <!-- health, water access, food availability, electricity supply, affordability -->
+                    <div id="liveability-factors" class="flex flex-col space-y-1 w-2/3 gap-2 w-full hidden">
+                        <p class="text-sm">This is a measure of how well your city meets the residents needs. The higher the better.</p>
+
+                        <div>
+                            <span class="text-[15px] block">HEALTH</span>
+                            <div class="w-fit relative">
+                                <div id="health-bar" class="indicator-bar flex">
+                                    <div class="bg-[#B82100]"></div>
+                                    <div class="bg-[#DD2800]"></div>
+                                    <div class="bg-[#DC5100]"></div>
+                                    <div class="bg-[#DB6200]"></div>
+                                    <div class="bg-[#DC7D00]"></div>
+                                    <div class="bg-[#D9A400]"></div>
+                                    <div class="bg-[#DBC300]"></div>
+                                    <div class="bg-[#C0D900]"></div>
+                                    <div class="bg-[#9FD200]"></div>
+                                    <div class="bg-[#7DD600]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="health-indicator"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[15px] block">WATER ACCESS</span>
+                            <div class="w-fit relative">
+                                <div id="water-access-bar" class="indicator-bar flex">
+                                    <div class="bg-[#C08E64]"></div>
+                                    <div class="bg-[#C08665]"></div>
+                                    <div class="bg-[#C07F64]"></div>
+                                    <div class="bg-[#C17464]"></div>
+                                    <div class="bg-[#AB7D76]"></div>
+                                    <div class="bg-[#8C8B8E]"></div>
+                                    <div class="bg-[#6F97A6]"></div>
+                                    <div class="bg-[#4DA6C0]"></div>
+                                    <div class="bg-[#2DB4DB]"></div>
+                                    <div class="bg-[#07C4F9]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="water-access-indicator"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[15px] block">FOOD AVAILABILITY</span>
+                            <div class="w-fit relative">
+                                <div id="food-availability-bar" class="indicator-bar flex">
+                                    <div class="bg-[#734343]"></div>
+                                    <div class="bg-[#7D4B4B]"></div>
+                                    <div class="bg-[#865050]"></div>
+                                    <div class="bg-[#8E5F59]"></div>
+                                    <div class="bg-[#7E6F53]"></div>
+                                    <div class="bg-[#668950]"></div>
+                                    <div class="bg-[#50A44D]"></div>
+                                    <div class="bg-[#39BE49]"></div>
+                                    <div class="bg-[#21D946]"></div>
+                                    <div class="bg-[#0AF342]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="food-availability-indicator"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[15px] block">ELECTRICITY SUPPLY</span>
+                            <div class="w-fit relative">
+                                <div id="electricity-supply-bar" class="indicator-bar flex">
+                                    <div class="bg-[#0D0E00]"></div>
+                                    <div class="bg-[#272400]"></div>
+                                    <div class="bg-[#413C00]"></div>
+                                    <div class="bg-[#5A5400]"></div>
+                                    <div class="bg-[#746D00]"></div>
+                                    <div class="bg-[#8D8401]"></div>
+                                    <div class="bg-[#A79C00]"></div>
+                                    <div class="bg-[#C1B400]"></div>
+                                    <div class="bg-[#DACB01]"></div>
+                                    <div class="bg-[#F4E301]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="electricity-supply-indicator"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[15px] block">HOUSING</span>
+                            <div class="w-fit relative">
+                                <div id="housing-bar" class="indicator-bar flex">
+                                    <div class="bg-[#C30001]"></div>
+                                    <div class="bg-[#DA1A1A]"></div>
+                                    <div class="bg-[#F23737]"></div>
+                                    <div class="bg-[#EE4C4D]"></div>
+                                    <div class="bg-[#E86262]"></div>
+                                    <div class="bg-[#E57777]"></div>
+                                    <div class="bg-[#E08B8C]"></div>
+                                    <div class="bg-[#DBA2A2]"></div>
+                                    <div class="bg-[#D5B8B9]"></div>
+                                    <div class="bg-[#D0CFCE]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="housing-indicator"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- air pollution, water pollution -->
+                    <div id="pollution-factors" class="flex flex-col space-y-1 w-2/3 gap-2 w-full hidden">
+                        <p class="text-sm">How much pollution does your city produce? The lower the better.</p>
+
+                        <div>
+                            <span class="text-[15px] block">AIR POLLUTION</span>
+                            <div class="w-fit relative">
+                                <div id="air-pollution-bar" class="indicator-bar flex">
+                                    <div class="bg-[#D5D5D5]"></div>
+                                    <div class="bg-[#BCBCBC]"></div>
+                                    <div class="bg-[#ABABAB]"></div>
+                                    <div class="bg-[#A2A2A2]"></div>
+                                    <div class="bg-[#969696]"></div>
+                                    <div class="bg-[#888888]"></div>
+                                    <div class="bg-[#767676]"></div>
+                                    <div class="bg-[#6D6D6D]"></div>
+                                    <div class="bg-[#646464]"></div>
+                                    <div class="bg-[#5A5A5A]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="air-pollution-indicator"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[15px] block">WATER POLLUTION</span>
+                            <div class="w-fit relative">
+                                <div id="water-pollution-bar" class="indicator-bar flex">
+                                    <div class="bg-[#4699F2]"></div>
+                                    <div class="bg-[#4E96E5]"></div>
+                                    <div class="bg-[#5593D9]"></div>
+                                    <div class="bg-[#5E8FCC]"></div>
+                                    <div class="bg-[#668CBF]"></div>
+                                    <div class="bg-[#6D89B3]"></div>
+                                    <div class="bg-[#7485A7]"></div>
+                                    <div class="bg-[#7C839B]"></div>
+                                    <div class="bg-[#847F8D]"></div>
+                                    <div class="bg-[#8B7C82]"></div>
+                                </div>
+                                <div class="indicator-arrow" id="water-pollution-indicator"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Build Options List -->
+                    <div id="build-options-screen">
+                        <div id="build-options" class="overflow-y-auto h-[380px]"></div>
+                        <div id="tile-option-buttons" class="pt-2">
+                            <button id="build-button" class="bg-black text-white px-5 py-2 h-fit">Demolish</button>
+                        </div>
+                    </div>
+
+                    <!-- Build Details View -->
+                    <div id="build-details" class="w-full hidden">
+                        <div class="overflow-y-auto h-[340px]">
+                            <!-- Row with Image and Description -->
+                            <div class="flex items-start gap-3 mb-2">
+                                <img id="build-detail-picture" class="w-36 h-auto object-cover flex-shrink-0" />
+                                <p id="build-detail-description" class="text-sm">Uses reverse osmosis to remove the salt from seawater, turning it into fresh drinking water.</p>
+                            </div>
+
+                            <!-- Pros and Cons horizontally aligned -->
+                            <div class="flex gap-6 mb-2">
+                                <div class="w-1/2">
+                                    <span class="block mb-1">PROS:</span>
+                                    <ul class="text-sm list-none pl-0" id="pros-list">
+                                        <li class="pl-3 relative"><span class="absolute left-0">+</span> Increases water access</li>
+                                        <li class="pl-3 relative"><span class="absolute left-0">+</span> Produces drinking water even in drought</li>
+                                    </ul>
+                                </div>
+                                <div class="w-1/2">
+                                    <span class="block mb-1">CONS:</span>
+                                    <ul class="text-sm list-none pl-0" id="cons-list">
+                                        <li class="pl-3 relative"><span class="absolute left-0">-</span> Uses a lot of energy to run</li>
+                                        <li class="pl-3 relative"><span class="absolute left-0">-</span> Expensive to run and maintain</li>
+                                        <li class="pl-3 relative"><span class="absolute left-0">-</span> Pollutes ocean with harmful chemicals</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- To build and Ongoing section side by side -->
+                        <div class="flex justify-between items-center">
+                            <div class="flex text-sm gap-3" id="build-detail-costs">
+                                <div>
+                                    <span>To build:</span>
+                                    <div>370 iron</div>
+                                    <div>$2100 labour</div>
+                                </div>
+                                <div>
+                                    <span>Ongoing:</span>
+                                    <div>5 coal/day</div>
+                                    <div>$100/day</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div id="missing-resource-popup" class="absolute bg-white text-sm p-4 rounded shadow-md w-64 hidden" style="transform: translateX(-100%) translateX(-10px) translateY(-50%) translateY(20px); z-index: 1000;">
+                                    <div class="text-lg mb-2">Missing resources:</div>
+                                    <div class="flex flex-col text-base" id="missing-resources-list">
+                                        <p>370 iron (you have 200)</p>
+                                        <p>60 coal (you have 150)</p>
+                                    </div>
+                                    <div class="mt-1 mb-3">You can import the missing resources and build right now for <span id="missing-resource-total-price">$32</span></div>
+                                    <div class="flex justify-between gap-2">
+                                        <button class="bg-gray-300 px-3 py-2 w-1/2" id="missing-resource-import-no-button">No thanks</button>
+                                        <button class="bg-black text-white px-3 py-2 w-1/2" id="missing-resource-import-yes-button">Yes, import</button>
+                                    </div>
+
+                                    <!-- Triangle Tail -->
+                                    <div class="absolute right-[-10px] top-1/2 transform -translate-y-1/2">
+                                        <div style="
+                                            width: 0;
+                                            height: 0;
+                                            border-top: 10px solid transparent;
+                                            border-bottom: 10px solid transparent;
+                                            border-left: 10px solid white;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button id="build-button" class="bg-black text-white px-5 py-2 h-fit">Build</button>
+
+                                <div id="insufficient-funds-msg" class="absolute bg-white text-sm w-[150px] p-2 rounded shadow-md hidden" style="z-index: 1000; transform: translateY(5px) translateX(-50%) translateX(39px);">
+                                    <div class="absolute top-[-5px] left-1/2 transform -translate-x-1/2">
+                                        <div style="
+                                            width: 0;
+                                            height: 0;
+                                            border-left: 5px solid transparent;
+                                            border-right: 5px solid transparent;
+                                            border-bottom: 5px solid white;">
+                                        </div>
+                                    </div>
+                                    Not enough money!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="trade-popup" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[10000] hidden">
+        <div class="bg-white rounded-md shadow-lg w-[700px] max-w-full relative">
+
+            <!-- Header Row -->
+            <div class="flex items-center justify-between p-6 pl-8">
+                <h2 class="text-3xl">Trade</h2>
+                <div class="flex items-center gap-4">
+                    <div class="text-sm text-gray-700">Total wealth: <span id="trade-total-wealth">$1000</span></div>
+                    <button onclick="close_trade_popup()" class="text-black text-4xl leading-none">&times;</button>
+                </div>
+            </div>
+
+            <!-- Resources Container -->
+            <div id="resources-container" class="flex-1 h-[450px] pl-8 pr-6 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="instructions-window" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[10000] hidden">
+        <div class="bg-white rounded-md shadow-lg w-[700px] max-w-full relative">
+
+            <!-- Header Row -->
+            <div class="flex items-center justify-between p-6 pl-8">
+                <h2 class="text-3xl">How to play</h2>
+                <div class="flex items-center gap-4">
+                    <button onclick="hide_instructions_window()" class="text-black text-4xl leading-none">&times;</button>
+                </div>
+            </div>
+
+            <div class="flex-1 h-[400px] pl-8 pr-6 pb-4 overflow-y-auto" id="instructions-text">
+                <p>Congratulations on becoming mayor of <span id="instructions-city-name"></span>, your new city.</p>
+                <br>
+                <p>
+                    In this role you will be responsible for collecting resources, building infrastructure and listening to your residents needs in order to grow your city. 
+                    When you start you will be presented with a grid of tiles which represent areas of your city you can build on.
+                    Clicking on one of the tiles will select it.
+                </p>
+                <img class="h-[450px]" src="game-images/grid.png">
+                <p>
+                    Most maps start with grassland, forest, beach, ocean or river.
+                    You'll have the ability to choose what you want to build but your options will depend on what tile you select.
+                    You will notice that you won't be able to afford the more expensive builds at first but as you gain more wealth and resources you will be able to.
+                </p>
+                <img class="h-[350px]" src="game-images/selection-panel.png">
+                <p>
+                    It's best that you start with building houses as this will bring new residents to your city who will pay taxes and increase your wealth.
+                    You may need to wait a few days for something to finish builiding. But don't worry; you won't be waiting for a whole day, only the time it takes to press the 'Next day' button a few times.
+                </p>
+                <br>
+                <p>
+                    On the right of game is the sidebar. Your city's wealth, population and happiness levels are shown here. 
+                    You can also adjust tax rates or trade resources.
+                    Residents may not always be happy and may leave your city if their needs aren't met.
+                    Make sure to hover over the angry faces to read their complaints.
+                </p>
+                <img class="h-[350px]" src="game-images/faces.png">
+                <p>
+                    Two other things worth knowing about is the liveability and pollution indicators.
+                    Liveability measures things such as your city's health, water access, food supply, electricity and housing.
+                    The more liveable your city is the more people will want to live there.
+                    Pollution meanwhile you will want to keep to a minimum as too much pollution can make your population sick.
+                </p>
+                <img src="game-images/indicators.png">
+                <p>You can also click on one of the indicators to bring up more info.</p>
+                <br>
+                <h3 class="text-xl">Running out of money?</h3>
+                <p>
+                    If you short of cash click the 'Next day' button a few times. You will earn some tax income. 
+                    If have some resources you can sell them a profit in the trading window.
+                </p>
+                <h3 class="text-2xl">Trading</h3>
+                <p>
+                    You will start collecting resources when you build farms, log forest or mine for minerals. 
+                    You buy and sell resources in the trading window.
+                </p>
+                <img class="h-[350px]" src="game-images/trading-window.png">
+                <br>
+                <p>Tip: its best to buy when prices are low and sell when prices are high.</p>
+            </div>
+
+            <div class="p-2 flex flex-row bg-[#F2F2F2] gap-4 items-center">
+                <p>Tip: You can bring back this screen at any time in the game by clicking the question mark (?) in the upper right hand corner.</p>
+                <div class="flex-1"></div>
+                <button class="bg-black text-white px-5 py-2 h-fit" onclick="hide_instructions_window()">Play</button>
+            </div>
+        </div>
+    </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
