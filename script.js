@@ -3001,7 +3001,7 @@ function start_day()
         tax_rate_max = 30;
     }
 
-    let unhappy_messages = {}; // /6
+    let unhappy_messages = {};
 
     if (game_state.tax_rate > tax_rate_max)
     {
@@ -3054,22 +3054,23 @@ function start_day()
         unhappy_messages[message] = Math.min(Math.max(Math.round(frequency / sensitivity), 1), 10);
     }
 
-    console.log(unhappy_messages);
-
     game_state.complaints = [];
 
     let remaining_complaints = 10;
 
-    for (const message of messages_sorted)
+    if (game_state.population)
     {
-        let frequency = Math.min(unhappy_messages[message], remaining_complaints);
-
-        for (let i = 0; i < frequency; i++)
+        for (const message of messages_sorted)
         {
-            game_state.complaints.push(message);
-        }
+            let frequency = Math.min(unhappy_messages[message], remaining_complaints);
 
-        remaining_complaints -= frequency;
+            for (let i = 0; i < frequency; i++)
+            {
+                game_state.complaints.push(message);
+            }
+
+            remaining_complaints -= frequency;
+        }
     }
 
     game_state.population = 0;
