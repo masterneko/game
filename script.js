@@ -1,10 +1,9 @@
-function set_indicator_level(indicator_el, level)
-{
-    const level_index = Math.round(level / 10) - 1;
-    const position = (level_index * 10) + 5;
-    
-    indicator_el.style.left = `${position}%`;
-}
+/*
+Filename: script.js
+Author: Cael
+Purpose: Main script for game, Ecocity
+Revision: August 2025
+*/
 
 let liveability_indicator = document.getElementById("liveability-indicator");
 let pollution_indicator = document.getElementById("pollution-indicator");
@@ -16,6 +15,16 @@ let electricity_supply_indicator = document.getElementById("electricity-supply-i
 let housing_indicator = document.getElementById("housing-indicator");
 let air_pollution_indicator = document.getElementById("air-pollution-indicator");
 let water_pollution_indicator = document.getElementById("water-pollution-indicator");
+
+// some utility functions
+
+function set_indicator_level(indicator_el, level)
+{
+    const level_index = Math.round(level / 10) - 1;
+    const position = (level_index * 10) + 5;
+    
+    indicator_el.style.left = `${position}%`;
+}
 
 function random_whole_number(min, max)
 {
@@ -43,6 +52,8 @@ function clone_object(obj)
 {
     return JSON.parse(JSON.stringify(obj));
 }
+
+// Main definitions of the game's main parts
 
 const MAP_DIM = 10;
 
@@ -171,6 +182,7 @@ const tile_action_icons = {
     [TileAction.Prospecting]: "./icons/prospect.png"
 };
 
+// Contains all tile types, their tile image and the information regarding building them (if applicable)
 const tile_types = {
     [Grassland]: {
         tile: "./tiles/grassland.svg",
@@ -1082,6 +1094,7 @@ const tile_types = {
     }
 };
 
+// maps tiles to what can be built on them (or what they can be upgraded into)
 const builds_and_upgrades = {
     [Grassland]: [ House, WheatFarm, RiceFarm, Hospital, CoalMine, UraniumMine, IronMine, Forest, RainwaterTank, CoalPowerPlant, NuclearPowerPlant, SolarFarm ],
     [Beach]: [ BeachHouse ],
@@ -1095,6 +1108,9 @@ const builds_and_upgrades = {
     [RiceFarm]: [ IntensiveRiceFarm ],
     [Fishery]: [ LargeFishery ]
 };
+
+/////////
+// Game logic (terrain generation, DOM updates, etc)
 
 function generate_map()
 {
@@ -1169,6 +1185,7 @@ function generate_map()
         }
 
         let borders = [];
+
         // find the coordinates of tiles on the map that border forest
         for (let y = 0; y < MAP_DIM; y++)
         {
@@ -2778,35 +2795,8 @@ function check_insufficient_resources()
     return does_have_missing_resource;
 }
 
-/*
-type: BuildType
-current_action: {
-  type: TileAction,
-  completed_by: number
-},
-buried_resource: {
-    type: ResourceType,
-    supply: number,
-    found: boolean
-},
-prospected: boolean,
-population: number
-*/
-
 function start_day()
 {
-/*
-        ongoing_effects: {
-            wealth: 200,
-            resources: {},
-            air_pollution: 0,
-            water_pollution: 0,
-            water_access: 0,
-            health: 0,
-            food_availability: 0,
-            electricity_supply: 200
-        },
-*/
     let total_air_pollution = game_state.pollution_indicators.air_pollution;
     let total_water_pollution = game_state.pollution_indicators.water_pollution;
     let total_water_supply = 1000;
@@ -3044,8 +3034,6 @@ function start_day()
     }
 
     messages_sorted = Object.keys(unhappy_messages).sort((a, b) => unhappy_messages[b] - unhappy_messages[a]);
-
-    console.log(unhappy_messages);
 
     const sensitivity = 7;
 
